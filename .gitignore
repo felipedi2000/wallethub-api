@@ -1,0 +1,30 @@
+# Entornos Virtuales
+venv/
+.venv/
+env/
+
+# Credenciales y Configuración Local
+.env
+
+# Archivos de Datos Persistentes de Docker/Postgres
+postgres_data/
+*.dump
+*.sql
+
+# Archivos de Cache y Compilados de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDEs y Editores de Código
+.vscode/
+.idea/
+*.swp
+
+# Archivos del Sistema Operativo
+.DS_Store
+Thumbs.db
+
+# Estáticos locales
+staticfiles/
+media/
