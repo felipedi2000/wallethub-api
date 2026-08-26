@@ -24,17 +24,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     # Librerías de terceros
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
-
     #  Apps modulares
     "apps.authentication",
-    # "apps.wallet",
-    # "apps.transactions",
-
+    "apps.wallet",
+    "apps.transactions",
 ]
 
 

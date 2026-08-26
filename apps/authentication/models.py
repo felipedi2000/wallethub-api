@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -8,14 +10,15 @@ class User(AbstractUser):
     """
     Modelo de usuario personalizado para WalletHub.
     """
+
     username = None  # Desactiva el campo 'username' nativo
-    email = models.EmailField('Email address', unique=True)
+    email = models.EmailField("Email address", unique=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []  # No pide username al crear superusuario
 
     objects = UserManager()
@@ -28,7 +31,9 @@ class Device(models.Model):
     """
     Gestión y auditoría de dispositivos asociados al usuario.
     """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='devices')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="devices")
     device_name = models.CharField(max_length=255)
     ip_address = models.GenericIPAddressField()
     user_agent = models.TextField()

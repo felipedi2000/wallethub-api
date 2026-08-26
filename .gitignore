@@ -18,7 +18,6 @@ __pycache__/
 
 # IDEs y Editores de Código
 .vscode/
-.idea/
 *.swp
 
 # Archivos del Sistema Operativo
