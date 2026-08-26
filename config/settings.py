@@ -11,10 +11,12 @@ SECRET_KEY = "django-insecure-change-this"
 load_dotenv(BASE_DIR / ".env")
 
 sys.path.insert(0, str(BASE_DIR))
+DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
-DEBUG = True
-
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("ALLOWED_HOSTS","127.0.0.1,localhost").split(",")
+]
 
 
 INSTALLED_APPS = [
@@ -110,3 +112,5 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+ENABLE_ADMIN = os.getenv("ENABLE_ADMIN", "False").lower() in ("true", "1", "t")
