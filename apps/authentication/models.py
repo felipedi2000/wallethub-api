@@ -10,7 +10,7 @@ class User(AbstractUser):
     """
     Modelo de usuario personalizado para WalletHub.
     """
-
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = None  # Desactiva el campo 'username' nativo
     email = models.EmailField("Email address", unique=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
