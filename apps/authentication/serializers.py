@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+from .models import Device
 
 User = get_user_model()
 
@@ -82,3 +83,41 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.set_password(self.validated_data["new_password"])
         user.save()
         return user
+
+
+class DeviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Device
+        fields = [
+            "id",
+            "device_name",
+            "ip_address",
+            "user_agent",
+            "is_trusted",
+            "last_login_at",
+            "created_at",
+        ]
+        read_only_fields = ["id", "ip_address", "user_agent", "last_login_at", "created_at"]
+
+    def create(self, validated_data):
+
+        request = self.context["request"]
+        user = request.user  #extraer el usuario del jwt del rquest
+
+
+        ip = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "127.0.0.1"))
+        if ip and "," in ip:
+            ip = ip.split(",")[0].strip()
+        user_agent = request.META.get("HTTP_USER_AGENT", "Unknown")
+
+        # Guardar o actualizamos la instancia
+        device, _ = Device.objects.update_or_create(
+            user=user, #vincula el objeto de jwt como usuario
+            device_name=validated_data["device_name"],
+            defaults={
+                "ip_address": ip,
+                "user_agent": user_agent,
+                "is_trusted": validated_data.get("is_trusted", False),
+            },
+        )
+        return device
