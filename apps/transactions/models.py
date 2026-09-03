@@ -9,15 +9,21 @@ class IdempotencyKey(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="impdepotency_keys",
+        related_name="imdepotency_keys",
     )
 
-    key = models.CharField(max_length=255, unique=True)
+    key = models.CharField(max_length=255)
 
-    resposne_Data = models.JSONField(null=True, blank=True)
+    resposne_data = models.JSONField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user","key"], name="unique_user_imdepotency_key"
+            )
+        ]
     def __str__(self):
         return f"ImdepotencyKey {self.key} - {self.user}"
 
@@ -28,7 +34,16 @@ class Transaction(models.Model):
         COMPLETE = "COMPLETE", "Completada"
         FAILED = "FAILED", "Fallida"
 
+    class TransactionType(models.TextChoices):
+        DEPOSIT = "DEPOSIT", "Depósito"
+        WITHDRAWAL = "WITHDRAWAL", "Retiro"
+        TRANSFER = "TRANSFER", "Transferencia"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    transaction_type = models.CharField(
+        max_length=15, choices=TransactionType.choices
+    )
 
     wallet_from = models.ForeignKey(
         Wallet,
@@ -54,6 +69,15 @@ class Transaction(models.Model):
     description = models.CharField(max_length=255, blank=True)
     ref_code = models.CharField(max_length=100, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(amount__gt=0),
+                name="transaction_amount_must_be_positive",
+            )
+        ]
 
     def __str__(self):
         return f"Transacción {self.id} | {self.amount} | {self.status}"
@@ -87,7 +111,7 @@ class Movement(models.Model):
 
     amount = models.DecimalField(max_digits=15, decimal_places=2)
 
-    # Captura de auditoría: saldo justo antes y justo después del movimiento
+    # Captura de adutoria: saldo justo antes y justo después del movimiento
     balance_before = models.DecimalField(max_digits=15, decimal_places=2)
     balance_after = models.DecimalField(max_digits=15, decimal_places=2)
 

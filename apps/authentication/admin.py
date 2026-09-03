@@ -58,9 +58,6 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
-    """
-    Configuración del panel de administración para auditoría de dispositivos.
-    """
     list_display = ("user", "device_name", "ip_address", "is_trusted", "last_login_at")
     list_filter = ("is_trusted", "created_at")
     search_fields = ("user__email", "device_name", "ip_address")

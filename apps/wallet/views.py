@@ -17,7 +17,6 @@ class TransactionLimitViewSet(viewsets.ReadOnlyModelViewSet):
 class UserWalletView(generics.RetrieveAPIView):
     """
     GET /api/v1/wallet/me/
-    Retorna directamente la billetera única del usuario autenticado.
     """
     serializer_class = WalletSerializer
     permission_classes = [IsAuthenticated]

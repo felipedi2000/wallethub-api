@@ -47,7 +47,7 @@ class DeviceListCreateView(generics.ListCreateAPIView):
     serializer_class = DeviceSerializer
     permission_classes = [IsAuthenticated]
 
-    # Única responsabilidad de la vista: restringir el acceso a la BD
+    # unica responsabilidad de la vista: restringir el acceso a la BD
     def get_queryset(self):
         return Device.objects.filter(user=self.request.user)
 
