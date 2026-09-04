@@ -68,7 +68,7 @@ class TransactionService:
     # balance de entraa
     receiver_balance_before = receiver.balance
     receiver.balance += amount
-    receiver.save(update_fields="balance")
+    receiver.save(update_fields=["balance"])
     Movement.objects.create(
       wallet=receiver,
       transaction=txn,
@@ -102,7 +102,7 @@ class TransactionService:
             wallet_from=None,  # Origen externo
             wallet_to=locked_wallet,
             amount=amount,
-            status=Transaction.Status.COMPLETED,
+            status=Transaction.Status.COMPLETE,
             description=description,
         )
 

@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from .decorators import idempotency_key_required
 
 from .models import Transaction
 from .serializers import (
@@ -16,11 +17,11 @@ from .services import TransactionService
 
 class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
 
-  permissions_clases = [IsAuthenticated]
+  permissions_classes = [IsAuthenticated]
 
   def get_queryset(self):
 
-    user_wallet = self.user.wallet
+    user_wallet = self.request.user.wallet
 
     return(
       Transaction.objects.filter(wallet_from=user_wallet)
@@ -36,7 +37,8 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
     return TransactionDetailSerializer
 
   # se agregan meotods post para transferencias a los meotods base de viwe set
-  @action(detail=False, methods=["post"], url_path="ttransfer")
+  @action(detail=False, methods=["post"], url_path="transfer")
+  @idempotency_key_required
   def transfer(self, request):
     """
       POST /api/v1/transactions/transfer/
@@ -48,15 +50,17 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
       transaction_obj = TransactionService.execute_transfer(
         sender_wallet=request.user.wallet,
         receiver_wallet_id=serializer.validated_data["receiver_wallet_id"],
-        amount=serializer.validated_data.get("description", ""),
+        amount=serializer.validated_data["amount"],
+        description=serializer.validated_data.get("description", ""),
       )
     except DjangoValidationError as e:
-      raise DRFValidationError(e.message)
+      raise DRFValidationError(e.messages)
 
     response_serializer = TransactionDetailSerializer(transaction_obj)
     return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
   @action(detail=False, methods=["post"], url_path="deposit")
+  @idempotency_key_required
   def deposit(self, request):
         """
         POST /api/v1/transactions/deposit/
@@ -68,7 +72,7 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
             transaction_obj = TransactionService.execute_deposit(
                 wallet=request.user.wallet,
                 amount=serializer.validated_data["amount"],
-                description=serializer.validated_data.get("description", "Depósito de fondos"),
+                description=serializer.validated_data.get("description", ""),
             )
         except DjangoValidationError as e:
             raise DRFValidationError(e.messages)
