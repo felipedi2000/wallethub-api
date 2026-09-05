@@ -9,9 +9,6 @@ class TransactionLimitSerializer(serializers.ModelSerializer):
             "id",
             "daily_limit",
             "monthly_limit",
-            "daily_used",
-            "monthly_used",
-            "reset_date",
         ]
         # cleinte no puede editar estos valores en API API
         read_only_fields = fields

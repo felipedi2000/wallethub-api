@@ -1,3 +1,4 @@
+from decimal import Decimal
 import uuid
 from django.conf import settings
 from django.db import models
@@ -24,6 +25,11 @@ class Wallet(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def available_balance(self) -> Decimal:
+        """Calcula el saldo disponible excluyendo retenciones o bloqueos."""
+        return self.balance - self.blocked_balance
+    
     def __str__(self):
         return f"Wallet {self.user} - {self.balance} {self.currency}"
 
