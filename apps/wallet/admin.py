@@ -11,5 +11,5 @@ class WalletAdmin(admin.ModelAdmin):
 
 @admin.register(TransactionLimit)
 class TransactionLimitAdmin(admin.ModelAdmin):
-    list_display = ("user", "daily_limit", "monthly_limit", "daily_used", "monthly_used")
+    list_display = ("user", "daily_limit", "monthly_limit")
     search_fields = ("user__email",)

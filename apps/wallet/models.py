@@ -36,8 +36,6 @@ class TransactionLimit(models.Model):
     )
     daily_limit = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
     monthly_limit = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
-    daily_used = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
-    monthly_used = models.DecimalField(max_digits=15, decimal_places=2, default=0.0)
-    reset_date = models.DateField(auto_now_add=True)
+    
     def __str__(self):
         return f"Limites de {self.user}"

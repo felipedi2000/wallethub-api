@@ -1,8 +1,9 @@
+from datetime import timezone
 from decimal import Decimal
 from rest_framework import serializers
-from apps.wallet.models import Wallet
+from apps.wallet.models import TransactionLimit, Wallet
 from .models import Transaction, Movement
-
+from django.db.models import Sum
 
 # listar movimientos contable
 class MovementsSerializer(serializers.ModelSerializer):
@@ -44,7 +45,7 @@ class TransactionDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "movements",
         ]
-        readonly = True
+        readonly = fields
 
 
 # validar solicitud de transferencia
@@ -88,3 +89,55 @@ class DepositCreateSerializer(serializers.Serializer):
         allow_blank=True,
         default="Depósito de fondos",
     )
+
+class UserTransactionLimitSerializer(serializers.ModelSerializer):
+    daily_spent = serializers.SerializerMethodField()
+    daily_available = serializers.SerializerMethodField()
+    monthly_spent = serializers.SerializerMethodField()
+    monthly_available = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TransactionLimit
+        fields = [
+            "daily_limit",
+            "daily_spent",
+            "daily_available",
+            "monthly_limit",
+            "monthly_spent",
+            "monthly_available",
+        ]
+
+    def _get_daily_spent(self, user) -> Decimal:
+        today = timezone.now().date()
+        return Transaction.objects.filter(
+            wallet_from__user=user,
+            transaction_type=Transaction.TransactionType.TRANSFER,
+            created_at__date=today,
+        ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+
+    def _get_monthly_spent(self, user) -> Decimal:
+        now = timezone.now()
+        return Transaction.objects.filter(
+            wallet_from__user=user,
+            transaction_type=Transaction.TransactionType.TRANSFER,
+            created_at__year=now.year,
+            created_at__month=now.month,
+        ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+
+    def get_daily_spent(self, obj)-> Decimal:
+        return self._get_daily_spent(obj.user)
+
+    def get_daily_available(self, obj) -> Decimal:
+        if obj.daily_limit <= Decimal("0.00"):
+            return Decimal("0.00")  # Sin límite restringido
+        spent = self._get_daily_spent(obj.user)
+        return max(Decimal("0.00"), obj.daily_limit - spent)
+
+    def get_monthly_spent(self, obj) -> Decimal:
+        return self._get_monthly_spent(obj.user)
+
+    def get_monthly_available(self, obj) -> Decimal:
+        if obj.monthly_limit <= Decimal("0.00"):
+            return Decimal("0.00")  # sin limite
+        spent = self._get_monthly_spent(obj.user)
+        return max(Decimal("0.00"), obj.monthly_limit - spent)

@@ -39,7 +39,7 @@ def idempotency_key_required(view_func):
             if status.is_success(response.status_code) or status.is_client_error(response.status_code):
                 idempotency_record.response_code = response.status_code
                 
-                # Renderiza tipos complejos (UUID, Decimal) a tipos primitivos JSON
+                # Renderiza 
                 rendered_data = JSONRenderer().render(response.data)
                 idempotency_record.response_data = json.loads(rendered_data)
                 
