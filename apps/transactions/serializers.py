@@ -45,7 +45,7 @@ class TransactionDetailSerializer(serializers.ModelSerializer):
             "created_at",
             "movements",
         ]
-        readonly = fields
+        read_only_fields = fields
 
 
 # validar solicitud de transferencia

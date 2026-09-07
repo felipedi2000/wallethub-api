@@ -20,7 +20,7 @@ from .services import TransactionService
 from django.db.models import Q
 
 class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
-    permissions_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
 
@@ -44,6 +44,22 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
             return DepositCreateSerializer
         return TransactionDetailSerializer
 
+    def _get_request_context(self):
+        """Extrae contexto de la petición HTTP"""
+        device_id = self.request.headers.get("X-Device-ID") or self.request.data.get("device_id")
+        device = Device.objects.filter(id=device_id).first() if device_id else None
+        
+        ip_address = (
+            self.request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+            or self.request.META.get("REMOTE_ADDR", "")
+        )
+        user_agent = self.request.META.get("HTTP_USER_AGENT", "")
+        
+        return {
+            'device': device,
+            'ip_address': ip_address,
+            'user_agent': user_agent
+        }
     # se agregan meotods post para transferencias a los meotods base de viwe set
     @action(detail=False, methods=["post"], url_path="transfer")
     @idempotency_key_required
@@ -53,24 +69,16 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        device_id = request.headers.get("X-Device-ID") or request.data.get("device_id")
-        device = Device.objects.filter(id=device_id).first() if device_id else None
 
-        
-        ip_address = (
-            request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
-            or request.META.get("REMOTE_ADDR", "")
-        )
-        user_agent = request.META.get("HTTP_USER_AGENT", "")
+    
+        context = self._get_request_context()
         try:
             transaction_obj = TransactionService.execute_transfer(
                 sender_wallet=request.user.wallet,
                 receiver_wallet_id=serializer.validated_data["receiver_wallet_id"],
                 amount=serializer.validated_data["amount"],
                 description=serializer.validated_data.get("description", ""),
-                device=device,
-                ip_address=ip_address,
-                user_agent=user_agent
+                **context
             )
         except DjangoValidationError as e:
             raise DRFValidationError(e.messages)
@@ -87,24 +95,14 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        device_id = request.headers.get("X-Device-ID") or request.data.get("device_id")
-        device = Device.objects.filter(id=device_id).first() if device_id else None
-
-        
-        ip_address = (
-            request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
-            or request.META.get("REMOTE_ADDR", "")
-        )
-        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        context = self._get_request_context()
 
         try:
             transaction_obj = TransactionService.execute_deposit(
                 wallet=request.user.wallet,
                 amount=serializer.validated_data["amount"],
                 description=serializer.validated_data.get("description", ""),
-                device=device,
-                ip_address=ip_address,
-                user_agent=user_agent,
+                **context
             )
         except DjangoValidationError as e:
             raise DRFValidationError(e.messages)

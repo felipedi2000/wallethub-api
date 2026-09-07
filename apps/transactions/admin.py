@@ -5,7 +5,7 @@ from .models import IdempotencyKey, Movement, Transaction
 class IdempotencyKeyAdmin(admin.ModelAdmin):
     list_display = ("key", "user", "created_at")
     search_fields = ("key", "user__email")
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at","id")
 
 
 @admin.register(Transaction)

@@ -22,6 +22,7 @@ class IdempotencyKey(models.Model):
     response_data = models.JSONField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "idempotency_keys"
@@ -80,7 +81,7 @@ class Transaction(models.Model):
     description = models.CharField(max_length=255, blank=True, default="")
     ref_code = models.CharField(max_length=100, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    aupdated_at = models.DateTimeField(auto_now_add=True)
     # --- auditoria dispositivo ---
     device = models.ForeignKey(
         Device,
@@ -106,6 +107,11 @@ class Transaction(models.Model):
                 check=models.Q(amount__gt=0),
                 name="transaction_amount_must_be_positive",
             )
+        ]
+        indexes = [
+            models.Index(fields=['status', '-created_at']),
+            models.Index(fields=['wallet_from', '-created_at']),
+            models.Index(fields=['wallet_to', '-created_at']),
         ]
 
     def __str__(self):
