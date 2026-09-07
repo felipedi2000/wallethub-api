@@ -1,7 +1,7 @@
-from datetime import timezone
+from django.utils import timezone
 from decimal import Decimal
 from rest_framework import serializers
-from apps.wallet.models import TransactionLimit, Wallet
+from apps.wallet.models import TransactionLimit
 from .models import Transaction, Movement
 from django.db.models import Sum
 
@@ -66,10 +66,6 @@ class TransferCreateSerializer(serializers.Serializer):
         default="",
     )
 
-    def validate_receiver_wallet_id(self, value):
-        if not Wallet.objects.filter(id=value).exists():
-            raise serializers.ValidationError("La billetera de destino no existe.")
-        return value
 
 
 #validar recarga o deposito externo
@@ -108,28 +104,40 @@ class UserTransactionLimitSerializer(serializers.ModelSerializer):
         ]
 
     def _get_daily_spent(self, user) -> Decimal:
-        today = timezone.now().date()
-        return Transaction.objects.filter(
-            wallet_from__user=user,
-            transaction_type=Transaction.TransactionType.TRANSFER,
-            created_at__date=today,
-        ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        today = timezone.localdate()
+        return (
+            Transaction.objects.filter(
+                wallet_from__user=user,
+                transaction_type=Transaction.TransactionType.TRANSFER,
+                status=Transaction.Status.COMPLETE,
+                created_at__date=today,
+            )
+            .exclude(wallet_to__user=user)
+            .aggregate(total=Sum("amount"))["total"]
+            or Decimal("0.00")
+        )
 
     def _get_monthly_spent(self, user) -> Decimal:
         now = timezone.now()
-        return Transaction.objects.filter(
-            wallet_from__user=user,
-            transaction_type=Transaction.TransactionType.TRANSFER,
-            created_at__year=now.year,
-            created_at__month=now.month,
-        ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        return (
+            Transaction.objects.filter(
+                wallet_from__user=user,
+                transaction_type=Transaction.TransactionType.TRANSFER,
+                status=Transaction.Status.COMPLETE, 
+                created_at__year=now.year,
+                created_at__month=now.month,
+            )
+            .exclude(wallet_to__user=user) 
+            .aggregate(total=Sum("amount"))["total"]
+            or Decimal("0.00")
+        )
 
     def get_daily_spent(self, obj)-> Decimal:
         return self._get_daily_spent(obj.user)
 
     def get_daily_available(self, obj) -> Decimal:
         if obj.daily_limit <= Decimal("0.00"):
-            return Decimal("0.00")  # Sin límite restringido
+            return Decimal("0.00")  
         spent = self._get_daily_spent(obj.user)
         return max(Decimal("0.00"), obj.daily_limit - spent)
 
@@ -138,6 +146,24 @@ class UserTransactionLimitSerializer(serializers.ModelSerializer):
 
     def get_monthly_available(self, obj) -> Decimal:
         if obj.monthly_limit <= Decimal("0.00"):
-            return Decimal("0.00")  # sin limite
+            return Decimal("0.00")  
         spent = self._get_monthly_spent(obj.user)
         return max(Decimal("0.00"), obj.monthly_limit - spent)
+
+
+class TransactionListSerializer(serializers.ModelSerializer):
+    wallet_from_id = serializers.CharField(source="wallet_from.id", read_only=True, default=None)
+    wallet_to_id = serializers.CharField(source="wallet_to.id", read_only=True, default=None)
+    class Meta:
+        model = Transaction
+        fields = [
+            "id",
+            "ref_code",
+            "transaction_type",
+            "amount",
+            "status",
+            "wallet_from_id",
+            "wallet_to_id",
+            "description",
+            "created_at",
+        ]

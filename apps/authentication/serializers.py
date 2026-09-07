@@ -7,20 +7,24 @@ User = get_user_model()
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(read_only=True)
+    id = serializers.UUIDField(read_only=True)
     class Meta:
         model = User
-        fields = ("id", "email", "phone_number", "created_at", "updated_at")
-        read_only_fields = fields
+        fields = ("id", "email", "phone_number","first_name","last_name",  "created_at", "updated_at")
+        read_only_fields = ["id", "email"]
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
+    # campos para no retornar
     password = serializers.CharField(write_only=True, min_length=5)
     password_confirm = serializers.CharField(write_only=True)
     class Meta:
         model = User
-        fields = ("id", "email", "phone_number", "password", "password_confirm")
+        # campos de la petcion a usar
+        fields = ("id", "email", "phone_number", "first_name", "last_name", "password", "password_confirm")
 
-    # sobrescribir vzlidate
+    # sobrescribir validate
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError(
@@ -84,19 +88,35 @@ class ChangePasswordSerializer(serializers.Serializer):
         user.save()
         return user
 
+class GetUserWalletIdSerializer(serializers.ModelSerializer):
+    # solo campo id
+    wallet_id = serializers.UUIDField(
+        source="wallet.id",
+        read_only=True
+    )
+    class Meta:
+        model = User
+        fields=[
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "wallet_id",
+        ]
 
 class DeviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Device
+        # campos del serilzier retorna
         fields = [
             "id",
             "device_name",
             "ip_address",
             "user_agent",
-            "is_trusted",
             "last_login_at",
             "created_at",
         ]
+        # campos de lectura no se deben enviar 
         read_only_fields = ["id", "ip_address", "user_agent", "last_login_at", "created_at"]
 
     def create(self, validated_data):
@@ -121,3 +141,5 @@ class DeviceSerializer(serializers.ModelSerializer):
             },
         )
         return device
+
+

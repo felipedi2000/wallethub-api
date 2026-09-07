@@ -14,7 +14,8 @@ class User(AbstractUser):
     username = None  # Desactiva el campo 'username' nativo
     email = models.EmailField("Email address", unique=True)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
-
+    first_name = models.CharField(max_length=20, blank=True)
+    last_name = models.CharField(max_length=20, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

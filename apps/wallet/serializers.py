@@ -2,18 +2,6 @@ from rest_framework import serializers
 from .models import TransactionLimit
 from apps.wallet.models import Wallet
 
-class TransactionLimitSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TransactionLimit
-        fields = [
-            "id",
-            "daily_limit",
-            "monthly_limit",
-        ]
-        # cleinte no puede editar estos valores en API API
-        read_only_fields = fields
-
-
 class WalletSerializer(serializers.ModelSerializer):
     available_balance = serializers.DecimalField(
         max_digits=15, 

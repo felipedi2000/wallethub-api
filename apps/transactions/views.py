@@ -5,16 +5,19 @@ from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from apps.authentication.models import Device
+from apps.transactions.paginations import StandardResultsSetPagination
 from .decorators import idempotency_key_required
 from .models import Transaction
 from .serializers import (
     DepositCreateSerializer,
     TransactionDetailSerializer,
+    TransactionListSerializer,
     TransferCreateSerializer,
     UserTransactionLimitSerializer
 )
 from .services import TransactionService
-
+from django.db.models import Q
 
 class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
     permissions_classes = [IsAuthenticated]
@@ -50,13 +53,24 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        device_id = request.headers.get("X-Device-ID") or request.data.get("device_id")
+        device = Device.objects.filter(id=device_id).first() if device_id else None
 
+        
+        ip_address = (
+            request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+            or request.META.get("REMOTE_ADDR", "")
+        )
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
         try:
             transaction_obj = TransactionService.execute_transfer(
                 sender_wallet=request.user.wallet,
                 receiver_wallet_id=serializer.validated_data["receiver_wallet_id"],
                 amount=serializer.validated_data["amount"],
                 description=serializer.validated_data.get("description", ""),
+                device=device,
+                ip_address=ip_address,
+                user_agent=user_agent
             )
         except DjangoValidationError as e:
             raise DRFValidationError(e.messages)
@@ -73,11 +87,24 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        device_id = request.headers.get("X-Device-ID") or request.data.get("device_id")
+        device = Device.objects.filter(id=device_id).first() if device_id else None
+
+        
+        ip_address = (
+            request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+            or request.META.get("REMOTE_ADDR", "")
+        )
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+
         try:
             transaction_obj = TransactionService.execute_deposit(
                 wallet=request.user.wallet,
                 amount=serializer.validated_data["amount"],
                 description=serializer.validated_data.get("description", ""),
+                device=device,
+                ip_address=ip_address,
+                user_agent=user_agent,
             )
         except DjangoValidationError as e:
             raise DRFValidationError(e.messages)
@@ -110,4 +137,20 @@ class UserLimitsMeAPIView(APIView):
         return Response(
             serializer.data,
             status=status.HTTP_200_OK
+        )
+
+class TransactionHistoryView(viewsets.ReadOnlyModelViewSet):
+    serializer_class = TransactionListSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        user = self.request.user
+
+        return (
+            Transaction.objects.filter(
+                Q(wallet_from__user=user) | Q(wallet_to__user=user)
+            )
+            .select_related("wallet_from", "wallet_to")
+            .order_by("-created_at")
         )

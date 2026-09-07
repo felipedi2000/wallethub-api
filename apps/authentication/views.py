@@ -1,10 +1,13 @@
+from django.contrib.auth import get_user_model
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from .serializers import UserProfileSerializer, UserRegisterSerializer, LogoutSerializer, ChangePasswordSerializer, DeviceSerializer
+from .serializers import GetUserWalletIdSerializer, UserProfileSerializer, UserRegisterSerializer, LogoutSerializer, ChangePasswordSerializer, DeviceSerializer
 from .models import Device
 
-class UserProfileView(generics.RetrieveAPIView):
+User = get_user_model()
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
 
@@ -29,6 +32,37 @@ class LogoutView(generics.GenericAPIView):
             status=status.HTTP_200_OK,
         )
 
+class UserSearchView(generics.GenericAPIView):
+    serializer_class = GetUserWalletIdSerializer
+    permission_classes=[IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+
+        email = request.query_params.get("email")
+
+        if not email:
+            return Response(
+                {"detail": "El parámetro 'email' es requerido."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        
+        if email.lower() == request.user.email.lower():
+            return Response(
+                {"detail": "No puedes buscar tu propia cuenta para realizar transferencias."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            # busca por email sin importar si esat en mayuscula o minuscula
+            target_user = User.objects.select_related("wallet").get(email__iexact=email)
+        except  User.DoesNotExist:
+            return Response(
+                {"detail": "No se encontro usario registrado con ese correo"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serilizer = self.get_serializer(target_user)
+        return Response(serilizer.data, status=status.HTTP_200_OK)
 
 class ChangePasswordView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer

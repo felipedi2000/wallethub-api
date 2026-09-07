@@ -10,39 +10,48 @@ from apps.transactions.models import Transaction, Movement
 class TransactionService:
 
     @staticmethod
-    def _validate_user_limits(wallet: Wallet, amount: Decimal) -> None:
+    def _validate_user_limits(sender_wallet: Wallet, target_wallet: Wallet, amount: Decimal) -> None:
         """
         Valida dinámicamente que el monto no exceda los topes configurados.
         Calcula el consumo en tiempo real mediante agregación sobre Transaction.
         """
-        limits = getattr(wallet.user, "transaction_limit", None)
+
+        if sender_wallet.user_id == target_wallet.user_id:
+            return
+        
+        limits = getattr(sender_wallet.user, "transaction_limit", None)
         if not limits:
             return
 
         now = timezone.now()
-        today = now.date()
+        today = timezone.localdate()
 
-        # 1. LÍMITE DIARIO
+        # limite diario a excepcion cuentas propias
         if limits.daily_limit > Decimal("0.00"):
             daily_spent = Transaction.objects.filter(
-                wallet_from=wallet,
+                wallet_from=sender_wallet,
                 transaction_type=Transaction.TransactionType.TRANSFER,
                 created_at__date=today,
+                status=Transaction.Status.COMPLETE
+            ).exclude(
+                wallet_to__user=sender_wallet.user
             ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-
+            print(daily_spent)
             if (daily_spent + amount) > limits.daily_limit:
                 available_daily = max(Decimal("0.00"), limits.daily_limit - daily_spent)
                 raise ValidationError(
                     f"Límite diario superado. Disponible hoy: ${available_daily:,.2f} COP"
                 )
 
-        # 2. LÍMITE MENSUAL
+        # limite MENSUAL a xcepcionde transferencias a el mismo
         if limits.monthly_limit > Decimal("0.00"):
             monthly_spent = Transaction.objects.filter(
-                wallet_from=wallet,
+                wallet_from=sender_wallet,
                 transaction_type=Transaction.TransactionType.TRANSFER,
                 created_at__year=now.year,
                 created_at__month=now.month,
+            ).exclude(
+                wallet_to__user=sender_wallet.user
             ).aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
 
             if (monthly_spent + amount) > limits.monthly_limit:
@@ -61,24 +70,33 @@ class TransactionService:
         receiver_wallet_id: str,
         amount: Decimal,
         description: str = "",
+        device = None,
+        ip_address: str = "",
+        user_agent: str = ""
     ) -> Transaction:
+        
         """
         Ejecuta la transferencia entre dos billeteras con seguridad ACID y partida doble.
         """
+
         if amount <= Decimal("0.00"):
             raise ValidationError("El monto debe ser mayor a cero.")
 
         if str(sender_wallet.id) == str(receiver_wallet_id):
             raise ValidationError("No puedes realizar una transferencia a tu propia billetera.")
 
+        if device and  device.user_id != sender_wallet.user_id:
+                raise ValidationError("El dispositivo no pertenece al emisor.")            
+
+
         # Ordenar IDs para garantizar bloqueos consistentes
         wallet_ids = sorted([str(sender_wallet.id), str(receiver_wallet_id)])
 
-        # Traer y bloquear ambas billeteras en 1 sola consulta SQL con JOINs
+        # Traer y bloquear ambas billeteras
         wallets = (
             Wallet.objects.select_related("user", "user__transaction_limit")
             .filter(id__in=wallet_ids)
-            .select_for_update()
+            .select_for_update(of=("self", "user"))
             .in_bulk()
         )
 
@@ -90,7 +108,7 @@ class TransactionService:
             raise ValidationError("La billetera de destino no existe.")
 
         # 1. Validar límites de emisor
-        TransactionService._validate_user_limits(wallet=sender, amount=amount)
+        TransactionService._validate_user_limits(sender_wallet=sender, target_wallet=receiver,amount=amount )
 
         # 2. Validar saldo
         if sender.balance < amount:
@@ -104,6 +122,9 @@ class TransactionService:
             amount=amount,
             status=Transaction.Status.COMPLETE,
             description=description,
+            device=device,
+            ip_address= ip_address,
+            user_agent= user_agent
         )
 
         # 4. Asentar Débito (Salida)
@@ -143,6 +164,9 @@ class TransactionService:
         wallet: Wallet,
         amount: Decimal,
         description: str = "Depósito de fondos",
+        device=None,
+        ip_address: str = "",
+        user_agent: str = ""
     ) -> Transaction:
         """
         Ejecuta la recarga externa de fondos.
@@ -150,6 +174,10 @@ class TransactionService:
         if amount <= Decimal("0.00"):
             raise ValidationError("El monto debe ser mayor a cero.")
 
+        if device and device.user_id != wallet.user_id:
+            raise ValidationError(
+                "El dispositivo especificado no pertenece al usuario de la billetera."
+            )
         locked_wallet = Wallet.objects.select_for_update().get(id=wallet.id)
 
         txn = Transaction.objects.create(
@@ -159,6 +187,9 @@ class TransactionService:
             amount=amount,
             status=Transaction.Status.COMPLETE,
             description=description,
+            device=device,
+            ip_address=ip_address,
+            user_agent=user_agent
         )
 
         balance_before = locked_wallet.balance
