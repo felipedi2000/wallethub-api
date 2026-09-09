@@ -22,7 +22,7 @@ class IdempotencyKey(models.Model):
     response_data = models.JSONField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "idempotency_keys"
@@ -81,8 +81,8 @@ class Transaction(models.Model):
     description = models.CharField(max_length=255, blank=True, default="")
     ref_code = models.CharField(max_length=100, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    aupdated_at = models.DateTimeField(auto_now_add=True)
-    # --- auditoria dispositivo ---
+    updated_at = models.DateTimeField(auto_now=True)
+    # --- dispositivo
     device = models.ForeignKey(
         Device,
         on_delete=models.SET_NULL,
@@ -150,6 +150,7 @@ class Movement(models.Model):
     balance_after = models.DecimalField(max_digits=15, decimal_places=2)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]

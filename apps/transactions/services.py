@@ -100,7 +100,7 @@ class TransactionService:
             .in_bulk()
         )
 
-        # Extraer usando string explícito o UUID según cómo in_bulk mapeó la clave
+        # Extraer usando string explícito o UUID in_bulk mapeó la clave
         sender = wallets.get(sender_wallet.id) or wallets.get(str(sender_wallet.id))
         receiver = wallets.get(receiver_wallet_id) or wallets.get(str(receiver_wallet_id))
 

@@ -2,7 +2,6 @@ from decimal import Decimal
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-
 from apps.wallet.models import Wallet, TransactionLimit
 from apps.transactions.models import Transaction
 from apps.transactions.services import TransactionService
@@ -44,14 +43,15 @@ class TransactionServiceTestCase(TestCase):
         limits_a.daily_limit = Decimal("50000.00")
         limits_a.monthly_limit = Decimal("5000000.00")
         limits_a.save()
+        
 
     def test_execute_transfer_success(self):
-        """Verifica transferencia exitosa pasando el UUID de la billetera destino."""
+        # verificar transferencia exitosa
         monto = Decimal("30000.00")
 
         tx = TransactionService.execute_transfer(
             sender_wallet=self.wallet_a1,
-            receiver_wallet_id=str(self.wallet_b.id),  # Se pasa el ID como string
+            receiver_wallet_id=self.wallet_b.id, 
             amount=monto,
             description="Pago exitoso",
         )
@@ -59,19 +59,19 @@ class TransactionServiceTestCase(TestCase):
         self.wallet_a1.refresh_from_db()
         self.wallet_b.refresh_from_db()
 
-        self.assertEqual(tx.status, Transaction.Status.COMPLETED)
+        self.assertEqual(tx.status, Transaction.Status.COMPLETE)
         self.assertEqual(self.wallet_a1.balance, Decimal("9970000.00"))
         self.assertEqual(self.wallet_b.balance, Decimal("230000.00"))
 
     def test_execute_transfer_insufficient_balance(self):
-        """Verifica que falle si el saldo es menor al monto solicitado."""
+        # testear fondos insuficientes
         self.wallet_a1.balance = Decimal("10000.00")
         self.wallet_a1.save()
 
         with self.assertRaises(ValidationError):
             TransactionService.execute_transfer(
                 sender_wallet=self.wallet_a1,
-                receiver_wallet_id=str(self.wallet_b.id),
+                receiver_wallet_id=self.wallet_b.id,
                 amount=Decimal("20000.00"),
             )
 
@@ -79,47 +79,48 @@ class TransactionServiceTestCase(TestCase):
         self.assertEqual(self.wallet_a1.balance, Decimal("10000.00"))
 
     def test_transfer_exceeds_daily_limit(self):
-        """Verifica que falle si el monto o acumulado supera los $50,000 diarios."""
+        #testear limite diario
         # Intento directo de $60,000
         with self.assertRaises(ValidationError):
             TransactionService.execute_transfer(
                 sender_wallet=self.wallet_a1,
-                receiver_wallet_id=str(self.wallet_b.id),
+                receiver_wallet_id=self.wallet_b.id,
                 amount=Decimal("60000.00"),
             )
 
-        # Primera transferencia válida de $40,000
+        # Primera transferencia valida en topes
         TransactionService.execute_transfer(
             sender_wallet=self.wallet_a1,
-            receiver_wallet_id=str(self.wallet_b.id),
+            receiver_wallet_id=self.wallet_b.id,
             amount=Decimal("40000.00"),
         )
 
-        # Segunda transferencia de $20,000 (acumula $60,000 > tope de $50,000)
+        # Segunda transferencia superando limite acumulado debe dar error
         with self.assertRaises(ValidationError):
             TransactionService.execute_transfer(
                 sender_wallet=self.wallet_a1,
-                receiver_wallet_id=str(self.wallet_b.id),
+                receiver_wallet_id=self.wallet_b.id,
                 amount=Decimal("20000.00"),
             )
 
     def test_transfer_exceeds_monthly_limit(self):
-        """Verifica que falle si el acumulado mensual supera los $5,000,000."""
+       # superar topes mensuales
         limits = TransactionLimit.objects.get(user=self.user_a)
         limits.daily_limit = Decimal("6000000.00")
         limits.save()
 
-        # Transferencia dentro del margen ($4,500,000)
+        # Transferencia dentro del margen mensual
         TransactionService.execute_transfer(
             sender_wallet=self.wallet_a1,
-            receiver_wallet_id=str(self.wallet_b.id),
+            receiver_wallet_id=self.wallet_b.id,
             amount=Decimal("4500000.00"),
         )
 
-        # Exceso acumulado ($4.5M + $600k = $5.1M > $5M)
+        # Exceso acumulado supera tope mensual
+        # verificar que lance una excepcion con daos qe explotan
         with self.assertRaises(ValidationError):
             TransactionService.execute_transfer(
                 sender_wallet=self.wallet_a1,
-                receiver_wallet_id=str(self.wallet_b.id),
+                receiver_wallet_id=self.wallet_b.id,
                 amount=Decimal("600000.00"),
             )

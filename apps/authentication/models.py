@@ -41,6 +41,7 @@ class Device(models.Model):
     is_trusted = models.BooleanField(default=False)
     last_login_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.user.email} - {self.device_name}"
