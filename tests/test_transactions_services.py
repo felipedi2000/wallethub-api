@@ -124,3 +124,49 @@ class TransactionServiceTestCase(TestCase):
                 receiver_wallet_id=self.wallet_b.id,
                 amount=Decimal("600000.00"),
             )
+    def test_execute_transfer_with_pre_blocked_funds_success(self):
+    
+        monto = Decimal("30000.00")
+
+        # 1. Simular la retención previa
+        self.wallet_a1.blocked_balance = monto
+        self.wallet_a1.save()
+
+        # 2. Ejecutar la liquidación de la transferencia
+        tx = TransactionService.execute_transfer(
+            sender_wallet=self.wallet_a1,
+            receiver_wallet_id=self.wallet_b.id,
+            amount=monto,
+            description="Transferencia de fondos bloqueados",
+            is_pre_blocked=True,
+        )
+
+        self.wallet_a1.refresh_from_db()
+        self.wallet_b.refresh_from_db()
+
+        self.assertEqual(tx.status, Transaction.Status.COMPLETE)
+        # Balance total disminuye de 9970000
+        self.assertEqual(self.wallet_a1.balance, Decimal("9970000.00"))
+        # Balance bloqueado deb ser 0
+        self.assertEqual(self.wallet_a1.blocked_balance, Decimal("0.00"))
+        # El receptor obtiene el dinero
+        self.assertEqual(self.wallet_b.balance, Decimal("230000.00"))
+
+    def test_execute_transfer_with_insufficient_blocked_balance(self):
+        
+        # Se retienen solo 10.000 pero se intentan transferir 30.000 pre-bloqueados
+        self.wallet_a1.blocked_balance = Decimal("10000.00")
+        self.wallet_a1.save()
+
+        with self.assertRaises(ValidationError):
+            TransactionService.execute_transfer(
+                sender_wallet=self.wallet_a1,
+                receiver_wallet_id=self.wallet_b.id,
+                amount=Decimal("30000.00"),
+                is_pre_blocked=True,
+            )
+
+        self.wallet_a1.refresh_from_db()
+        # Los saldos permanecen intactos
+        self.assertEqual(self.wallet_a1.balance, Decimal("10000000.00"))
+        self.assertEqual(self.wallet_a1.blocked_balance, Decimal("10000.00"))

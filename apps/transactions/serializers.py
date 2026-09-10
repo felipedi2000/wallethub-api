@@ -65,6 +65,7 @@ class TransferCreateSerializer(serializers.Serializer):
         allow_blank=True,
         default="",
     )
+    is_pre_blocked = serializers.BooleanField(required=False, default=False)
 
 
 

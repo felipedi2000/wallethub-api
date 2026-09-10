@@ -78,6 +78,7 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
                 receiver_wallet_id=serializer.validated_data["receiver_wallet_id"],
                 amount=serializer.validated_data["amount"],
                 description=serializer.validated_data.get("description", ""),
+                is_pre_blocked=serializer.validated_data.get("is_pre_blocked", False),
                 **context
             )
         except DjangoValidationError as e:

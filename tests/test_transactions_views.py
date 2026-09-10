@@ -298,3 +298,74 @@ class TransactionViewsTestCase(APITestCase):
         # transacciones ordenaas por fecha retornen correctamdente
         self.assertEqual(str(response.data[0]["id"]), str(tx2.id))
         self.assertEqual(str(response.data[1]["id"]), str(tx1.id))
+
+    def test_transfer_with_pre_blocked_funds_success(self):
+        """
+        Verifica transferencia vía API enviando is_pre_blocked=True
+        cuando existe saldo previamente retenido en la billetera.
+        """
+        self.client.force_authenticate(user=self.user_a)
+
+        # simular fondos bloqueados previamente
+        self.wallet_a.blocked_balance = Decimal("30000.00")
+        self.wallet_a.save()
+
+        payload = {
+            "receiver_wallet_id": str(self.wallet_b.id),
+            "amount": "30000.00",
+            "description": "Liquidación de fondas pre-bloqueados vía API",
+            "is_pre_blocked": True,
+        }
+
+        response = self.client.post(
+            self.transfer_url,
+            payload,
+            format="json",
+            HTTP_X_IDEMPOTENCY_KEY=str(uuid.uuid4())
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Refrescar estados desde DB
+        self.wallet_a.refresh_from_db()
+        self.wallet_b.refresh_from_db()
+
+        # balance disminuye en 30mil
+        self.assertEqual(self.wallet_a.balance, Decimal("970000.00"))
+        # El balance bloqueado se reduce a $0.00
+        self.assertEqual(self.wallet_a.blocked_balance, Decimal("0.00"))
+        # Billetera destino acredita la transferencia se transfirio bien al destino
+        self.assertEqual(self.wallet_b.balance, Decimal("230000.00"))
+
+    def test_transfer_with_pre_blocked_funds_insufficient_blocked_balance_fails(self):
+        """
+        Verifica que la API retorne 400 Bad Request si se envía is_pre_blocked=True
+        pero el monto supera el saldo retenido/bloqueado.
+        """
+        self.client.force_authenticate(user=self.user_a)
+
+        # retener 10 mil en billetera
+        self.wallet_a.blocked_balance = Decimal("10000.00")
+        self.wallet_a.save()
+
+        payload = {
+            "receiver_wallet_id": str(self.wallet_b.id),
+            "amount": "30000.00", # transferir 30  
+            "description": "Intento con saldo bloqueado insuficiente",
+            "is_pre_blocked": True, # dinero bloqueado
+        }
+
+        response = self.client.post(
+            self.transfer_url,
+            payload,
+            format="json",
+            HTTP_X_IDEMPOTENCY_KEY=str(uuid.uuid4())
+        )
+
+        # Debe retornar 400 Bad Request por la cd saldo insuficiente bloqueado
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # Validar que los saldos queden intactos
+        self.wallet_a.refresh_from_db()
+        self.assertEqual(self.wallet_a.balance, Decimal("1000000.00"))
+        self.assertEqual(self.wallet_a.blocked_balance, Decimal("10000.00"))

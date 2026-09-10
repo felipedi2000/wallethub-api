@@ -10,10 +10,14 @@ from apps.transactions.models import Transaction, Movement
 class TransactionService:
 
     @staticmethod
+    def _get_available_balance(wallet: Wallet)->Decimal:
+        blocked = getattr(wallet, "blocked_balance", Decimal("0.00") or Decimal("0.00"))
+        return wallet.balance - blocked
+    
+    @staticmethod
     def _validate_user_limits(sender_wallet: Wallet, target_wallet: Wallet, amount: Decimal) -> None:
         """
-        Valida dinámicamente que el monto no exceda los topes configurados.
-        Calcula el consumo en tiempo real mediante agregación sobre Transaction.
+        valida topes de dinero por usaurio en transaccion
         """
 
         if sender_wallet.user_id == target_wallet.user_id:
@@ -64,6 +68,42 @@ class TransactionService:
 
     @staticmethod
     @transaction.atomic
+    def block_funds(*, wallet: Wallet, amount: Decimal) -> None:
+        # retener dinero dentro de la billetera los fondos
+        if amount <= Decimal("0.00"):
+            raise ValidationError("El monto a retener debe ser mayor a cero")
+        locked_wallet = Wallet.objects.select_for_update().get(id=wallet.id)
+        available = TransactionService._get_available_balance(locked_wallet)
+
+        if available < amount:
+            raise ValidationError(
+                f"Saldo disponible insuficiente para retención. Disponible: ${available:,.2f} COP"
+            )
+
+        locked_wallet.blocked_balance += amount
+        locked_wallet.save(update_fields=["blocked_balance"])
+
+    @staticmethod
+    @transaction.atomic
+    def unblock_funds(*, wallet: Wallet, amount: Decimal) -> None:
+        """
+        Libera fondos retenidos devolviéndolos al saldo disponible.
+        """
+        if amount <= Decimal("0.00"):
+            raise ValidationError("El monto a liberar debe ser mayor a cero.")
+
+        locked_wallet = Wallet.objects.select_for_update().get(id=wallet.id)
+
+        if locked_wallet.blocked_balance < amount:
+            raise ValidationError(
+                f"No se puede liberar un monto superior al retenido. Retenido actual: ${locked_wallet.blocked_balance:,.2f} COP"
+            )
+
+        locked_wallet.blocked_balance -= amount
+        locked_wallet.save(update_fields=["blocked_balance"])
+
+    @staticmethod
+    @transaction.atomic
     def execute_transfer(
         *,
         sender_wallet: Wallet,
@@ -72,7 +112,8 @@ class TransactionService:
         description: str = "",
         device = None,
         ip_address: str = "",
-        user_agent: str = ""
+        user_agent: str = "",
+        is_pre_blocked: bool = False
     ) -> Transaction:
         
         """
@@ -107,10 +148,21 @@ class TransactionService:
         if not receiver:
             raise ValidationError("La billetera de destino no existe.")
 
-        # 1. Validar límites de emisor
+        # validar topes emisor
         TransactionService._validate_user_limits(sender_wallet=sender, target_wallet=receiver,amount=amount )
 
-        # 2. Validar saldo
+        if is_pre_blocked:
+            if sender.blocked_balance < amount:
+                raise ValidationError("Fondo retenido insuficiente para liquidar la transacción.")
+        else:
+            available = TransactionService._get_available_balance(sender)
+            if available < amount:
+                raise ValidationError(
+                    f"Saldo disponible insuficiente. Disponible: ${available:,.2f} COP "
+                    f"(Total: ${sender.balance:,.2f}, Retenido: ${sender.blocked_balance:,.2f})"
+                )
+
+        # validar insuficiencia de saldo segun el estado de reserva
         if sender.balance < amount:
             raise ValidationError("Saldo insuficiente para realizar la transferencia.")
 
@@ -130,7 +182,13 @@ class TransactionService:
         # 4. Asentar Débito (Salida)
         sender_balance_before = sender.balance
         sender.balance -= amount
-        sender.save(update_fields=["balance"])
+        update_fields=["balance"]
+
+        if is_pre_blocked:
+            sender.blocked_balance -= amount
+            update_fields.append("blocked_balance")
+
+        sender.save(update_fields=update_fields)
 
         Movement.objects.create(
             wallet=sender,

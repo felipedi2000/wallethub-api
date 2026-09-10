@@ -10,5 +10,4 @@ class UserWalletView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        # Obtiene directamente la billetera vinculada al usuario autenticado
         return self.request.user.wallet
