@@ -141,5 +141,3 @@ class DeviceSerializer(serializers.ModelSerializer):
             },
         )
         return device
-
-

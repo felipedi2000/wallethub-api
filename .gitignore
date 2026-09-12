@@ -3,10 +3,10 @@ venv/
 .venv/
 env/
 
-# Credenciales y Configuración Local
-.env
 
-# Archivos de Datos Persistentes de Docker/Postgres
+.env*
+*.env
+
 postgres_data/
 *.dump
 *.sql

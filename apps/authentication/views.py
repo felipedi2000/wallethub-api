@@ -4,15 +4,15 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from .serializers import GetUserWalletIdSerializer, UserProfileSerializer, UserRegisterSerializer, LogoutSerializer, ChangePasswordSerializer, DeviceSerializer
 from .models import Device
+from .throttling import UserSearchRateThrottle, StrictAnonRateThrottle
 
 User = get_user_model()
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
-
+    throttle_classes = [UserSearchRateThrottle]
     def get_object(self):
-        # Ignora la busqueda por ID en la BD y retoma la instancia actual del JWT
         return self.request.user
     
 class UserRegisterView(generics.CreateAPIView):
@@ -22,6 +22,7 @@ class UserRegisterView(generics.CreateAPIView):
 class LogoutView(generics.GenericAPIView):
     serializer_class = LogoutSerializer
     permission_classes = [IsAuthenticated]
+    throttle_classes = [StrictAnonRateThrottle]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -67,7 +68,7 @@ class UserSearchView(generics.GenericAPIView):
 class ChangePasswordView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
     permission_classes = [IsAuthenticated]
-
+    throttle_classes = [UserSearchRateThrottle]
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
