@@ -16,10 +16,6 @@ class TransactionService:
     
     @staticmethod
     def _validate_user_limits(sender_wallet: Wallet, target_wallet: Wallet, amount: Decimal) -> None:
-        """
-        valida topes de dinero por usaurio en transaccion
-        """
-
         if sender_wallet.user_id == target_wallet.user_id:
             return
         
@@ -86,9 +82,6 @@ class TransactionService:
     @staticmethod
     @transaction.atomic
     def unblock_funds(*, wallet: Wallet, amount: Decimal) -> None:
-        """
-        Libera fondos retenidos devolviéndolos al saldo disponible.
-        """
         if amount <= Decimal("0.00"):
             raise ValidationError("El monto a liberar debe ser mayor a cero.")
 
@@ -116,10 +109,6 @@ class TransactionService:
         is_pre_blocked: bool = False
     ) -> Transaction:
         
-        """
-        Ejecuta la transferencia entre dos billeteras con seguridad ACID y partida doble.
-        """
-
         if amount <= Decimal("0.00"):
             raise ValidationError("El monto debe ser mayor a cero.")
 
@@ -141,7 +130,7 @@ class TransactionService:
             .in_bulk()
         )
 
-        # Extraer usando string explícito o UUID in_bulk mapeó la clave
+        # Extraer usando string explícito o UUID in_bulk en dict
         sender = wallets.get(sender_wallet.id) or wallets.get(str(sender_wallet.id))
         receiver = wallets.get(receiver_wallet_id) or wallets.get(str(receiver_wallet_id))
 
@@ -179,7 +168,6 @@ class TransactionService:
             user_agent= user_agent
         )
 
-        # 4. Asentar Débito (Salida)
         sender_balance_before = sender.balance
         sender.balance -= amount
         update_fields=["balance"]
@@ -199,7 +187,6 @@ class TransactionService:
             balance_after=sender.balance,
         )
 
-        # 5. Asentar Crédito (Entrada)
         receiver_balance_before = receiver.balance
         receiver.balance += amount
         receiver.save(update_fields=["balance"])
@@ -226,9 +213,6 @@ class TransactionService:
         ip_address: str = "",
         user_agent: str = ""
     ) -> Transaction:
-        """
-        Ejecuta la recarga externa de fondos.
-        """
         if amount <= Decimal("0.00"):
             raise ValidationError("El monto debe ser mayor a cero.")
 

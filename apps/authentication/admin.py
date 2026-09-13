@@ -6,23 +6,14 @@ from .models import User, Device
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """
-    Configuración personalizada del panel de administración para el modelo User.
-    Basado exclusivamente en 'email' como identificador principal.
-    """
-    # Columnas visibles en la lista
     list_display = ("email", "phone_number", "is_staff", "is_active", "created_at")
-    
-    # Filtros laterales
+
     list_filter = ("is_staff", "is_superuser", "is_active", "created_at")
-    
-    # Campos de búsqueda
+
     search_fields = ("email", "phone_number")
-    
-    # Orden predeterminado (más recientes primero)
+
     ordering = ("-created_at",)
 
-    # Estructura del formulario de edición dentro del admin
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         (_("Información Personal"), {"fields": ("phone_number",)}),
@@ -41,10 +32,8 @@ class UserAdmin(BaseUserAdmin):
         (_("Fechas importantes"), {"fields": ("last_login", "created_at", "updated_at")}),
     )
 
-    # Campos de solo lectura al editar un usuario
     readonly_fields = ("created_at", "updated_at", "last_login")
 
-    # Formulario para la creación de un nuevo usuario desde el admin
     add_fieldsets = (
         (
             None,

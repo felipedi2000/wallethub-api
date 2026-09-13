@@ -5,7 +5,6 @@ from .models import Device
 
 User = get_user_model()
 
-
 class UserProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(read_only=True)
     id = serializers.UUIDField(read_only=True)

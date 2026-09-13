@@ -7,9 +7,6 @@ from .managers import UserManager
 
 
 class User(AbstractUser):
-    """
-    Modelo de usuario personalizado para WalletHub.
-    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = None  # Desactiva el campo 'username' nativo
     email = models.EmailField("Email address", unique=True)
@@ -29,10 +26,6 @@ class User(AbstractUser):
 
 
 class Device(models.Model):
-    """
-    Gestión y auditoría de dispositivos asociados al usuario.
-    """
-
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="devices")
     device_name = models.CharField(max_length=255)

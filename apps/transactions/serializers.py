@@ -71,9 +71,6 @@ class TransferCreateSerializer(serializers.Serializer):
 
 #validar recarga o deposito externo
 class DepositCreateSerializer(serializers.Serializer):
-    """
-    Serializer de entrada para validar la recarga o depósito.
-    """
     amount = serializers.DecimalField(
         max_digits=15,
         decimal_places=2,

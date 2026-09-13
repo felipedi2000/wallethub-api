@@ -5,12 +5,11 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
 
 from apps.authentication.models import Device
 from apps.transactions.paginations import StandardResultsSetPagination
-from apps.transactions.throttles import TransactionThrottle
+from apps.shared.throttles import TransactionThrottle, CustomUserRateThrottle
 
 from .decorators import idempotency_key_required
 from .models import Transaction
@@ -28,15 +27,11 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_throttles(self):
-        """
-        Aplica TransactionThrottle (estricto) para transferencias y depósitos,
-        y UserRateThrottle (general) para el resto de acciones de lectura.
-        """
         action_name = getattr(self, "action", None)
         if action_name in ["transfer", "deposit"]:
             return [TransactionThrottle()]
 
-        return [UserRateThrottle()]
+        return [CustomUserRateThrottle()]
 
     def get_queryset(self):
         user_wallet = self.request.user.wallet
@@ -59,7 +54,6 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
         return TransactionDetailSerializer
 
     def _get_request_context(self):
-        """Extrae contexto de seguridad de la petición HTTP."""
         device_id = self.request.headers.get("X-Device-ID") or self.request.data.get("device_id")
         device = Device.objects.filter(id=device_id).first() if device_id else None
 
@@ -78,7 +72,6 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["post"], url_path="transfer")
     @idempotency_key_required
     def transfer(self, request):
-        """POST /api/v1/transactions/transfer/"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -101,7 +94,6 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["post"], url_path="deposit")
     @idempotency_key_required
     def deposit(self, request):
-        """POST /api/v1/transactions/deposit/"""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -123,6 +115,7 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
 
 class UserLimitsMeAPIView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [CustomUserRateThrottle]
 
     def get(self, request):
         user = request.user
@@ -148,7 +141,9 @@ class UserLimitsMeAPIView(APIView):
 class TransactionHistoryView(viewsets.ReadOnlyModelViewSet):
     serializer_class = TransactionListSerializer
     permission_classes = [IsAuthenticated]
+    throttle_classes = [CustomUserRateThrottle]
     pagination_class = StandardResultsSetPagination
+
 
     def get_queryset(self):
         user = self.request.user

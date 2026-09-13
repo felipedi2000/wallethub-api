@@ -6,7 +6,6 @@ from django.dispatch import receiver
 from django.conf import settings
 from .models import TransactionLimit, Wallet
 
-# signals.py
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user_financial_profile(sender, instance, created, **kwargs):
     if created:

@@ -9,7 +9,6 @@ from apps.transactions.models import Transaction
 
 User = get_user_model()
 
-
 class TransactionViewsTestCase(APITestCase):
     def setUp(self):
         
@@ -35,7 +34,6 @@ class TransactionViewsTestCase(APITestCase):
         self.wallet_b.balance = Decimal("200000.00")
         self.wallet_b.save()
 
-        # limites por billetera
         limits_a = TransactionLimit.objects.get(user=self.user_a)
         limits_a.daily_limit = Decimal("50000.00")
         limits_a.monthly_limit = Decimal("5000000.00")
@@ -164,7 +162,6 @@ class TransactionViewsTestCase(APITestCase):
         self.assertEqual(len(response.data), 15)
 
     def test_user_cannot_see_other_users_transactions(self):
-        """Aislamiento de seguridad: User B no debe ver las transacciones donde solo participa User A."""
         # Generar transacción exclusiva para la Billetera A
         Transaction.objects.create(
             wallet_from=self.wallet_a,
@@ -300,10 +297,6 @@ class TransactionViewsTestCase(APITestCase):
         self.assertEqual(str(response.data[1]["id"]), str(tx1.id))
 
     def test_transfer_with_pre_blocked_funds_success(self):
-        """
-        Verifica transferencia vía API enviando is_pre_blocked=True
-        cuando existe saldo previamente retenido en la billetera.
-        """
         self.client.force_authenticate(user=self.user_a)
 
         # simular fondos bloqueados previamente
@@ -338,10 +331,6 @@ class TransactionViewsTestCase(APITestCase):
         self.assertEqual(self.wallet_b.balance, Decimal("230000.00"))
 
     def test_transfer_with_pre_blocked_funds_insufficient_blocked_balance_fails(self):
-        """
-        Verifica que la API retorne 400 Bad Request si se envía is_pre_blocked=True
-        pero el monto supera el saldo retenido/bloqueado.
-        """
         self.client.force_authenticate(user=self.user_a)
 
         # retener 10 mil en billetera

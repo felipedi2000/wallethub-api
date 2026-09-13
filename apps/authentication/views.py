@@ -4,14 +4,18 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from .serializers import GetUserWalletIdSerializer, UserProfileSerializer, UserRegisterSerializer, LogoutSerializer, ChangePasswordSerializer, DeviceSerializer
 from .models import Device
-from .throttling import UserSearchRateThrottle, StrictAnonRateThrottle
+from apps.shared.throttles import (
+    UserSearchRateThrottle,
+    StrictAnonRateThrottle,
+    CustomUserRateThrottle
+)
 
 User = get_user_model()
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [IsAuthenticated]
-    throttle_classes = [UserSearchRateThrottle]
+    throttle_classes = [CustomUserRateThrottle]
     def get_object(self):
         return self.request.user
     
@@ -36,6 +40,7 @@ class LogoutView(generics.GenericAPIView):
 class UserSearchView(generics.GenericAPIView):
     serializer_class = GetUserWalletIdSerializer
     permission_classes=[IsAuthenticated]
+    throttle_classes = [UserSearchRateThrottle]
 
     def get(self, request, *args, **kwargs):
 
@@ -68,7 +73,8 @@ class UserSearchView(generics.GenericAPIView):
 class ChangePasswordView(generics.GenericAPIView):
     serializer_class = ChangePasswordSerializer
     permission_classes = [IsAuthenticated]
-    throttle_classes = [UserSearchRateThrottle]
+    throttle_classes = [CustomUserRateThrottle]
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

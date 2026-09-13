@@ -2,9 +2,6 @@ from django.contrib.auth.models import BaseUserManager
 
 
 class UserManager(BaseUserManager):
-    """
-    Manager personalizado para la creación de usuarios usando Email.
-    """
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError('El email es un campo obligatorio.')

@@ -12,10 +12,6 @@ User = get_user_model()
 class TransactionServiceTestCase(TestCase):
 
     def setUp(self):
-        """
-        1. ARRANGE: Crear usuarios en la BD de pruebas.
-        Las señales post_save crean automáticamente la Wallet y TransactionLimit.
-        """
         self.user_a = User.objects.create_user(
             first_name="Edison",
             last_name="León",
