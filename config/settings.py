@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     "apps.authentication",
     "apps.wallet",
     "apps.transactions",
+
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -174,4 +176,6 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.BrowsableAPIRenderer",
         "rest_framework.renderers.JSONRenderer",
     ),
+
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
