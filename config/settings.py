@@ -76,7 +76,7 @@ if DATABASE_URL:
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
-            conn_max_age=60,
+            conn_max_age=600,
             ssl_require=True if not DEBUG else False,
         )
     }
@@ -164,6 +164,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "20/minute",     
         "user": "100/minute",
+        "user_search": "30/minute",
         "auth_strict": "5/minute", 
         "transactions": "10/minute",
     },

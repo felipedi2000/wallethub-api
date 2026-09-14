@@ -6,11 +6,15 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from apps.wallet.models import Wallet, TransactionLimit
 from apps.transactions.models import Transaction
+from apps.shared.throttles import CustomUserRateThrottle, TransactionThrottle
 
 User = get_user_model()
 
 class TransactionViewsTestCase(APITestCase):
     def setUp(self):
+
+        TransactionThrottle.rate = "10000/minute"
+        CustomUserRateThrottle.rate = "10000/minute"
         
         self.user_a = User.objects.create_user(
             first_name="usaurio1",

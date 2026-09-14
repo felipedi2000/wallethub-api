@@ -3,11 +3,15 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from apps.wallet.models import Wallet
+from apps.shared.throttles import CustomUserRateThrottle
 
 User = get_user_model()
 
 class WalletViewsTestCase(APITestCase):
     def setUp(self):
+
+        CustomUserRateThrottle.rate = "10000/minute"
+
         self.user_a = User.objects.create_user(
             email="wallet@example.com",
             password="Password123!",

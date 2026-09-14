@@ -3,13 +3,24 @@ from django.test import override_settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from apps.shared.throttles import (
+    CustomAnonRateThrottle,
+    CustomUserRateThrottle,
+    UserSearchRateThrottle,
+    StrictAnonRateThrottle,
+)
 User = get_user_model()
 
 @override_settings(SECRET_KEY="django-insecure-test-key-with-enough-length-32-bytes")
 class AuthenticationViewsTestCase(APITestCase):
 
     def setUp(self):
+
+        CustomAnonRateThrottle.rate = "10000/minute"
+        CustomUserRateThrottle.rate = "10000/minute"
+        UserSearchRateThrottle.rate = "10000/minute"
+        StrictAnonRateThrottle.rate = "10000/minute"
+
         self.password = "StrongPass1234q@"
         
         self.existing_user = User.objects.create_user(
@@ -53,7 +64,6 @@ class AuthenticationViewsTestCase(APITestCase):
             "last_name": "Fallback",
         }
         response = self.client.post(self.register_url, payload, format="json")
-
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_register_user_duplicate_email_fails(self):
