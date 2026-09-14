@@ -172,9 +172,6 @@ REST_FRAMEWORK = {
     },
      "DEFAULT_RENDERER_CLASSES": (
         "rest_framework.renderers.JSONRenderer",
-    ) if not DEBUG else (
-        "rest_framework.renderers.BrowsableAPIRenderer",
-        "rest_framework.renderers.JSONRenderer",
     ),
 
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
