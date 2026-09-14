@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from config import settings
+from apps.shared.views import custom_404_handler, custom_500_handler
 from drf_spectacular.views import (
     SpectacularSwaggerView,
     SpectacularRedocView,
@@ -17,3 +18,6 @@ urlpatterns = [
 
 if settings.ENABLE_ADMIN:
   urlpatterns.append(path("admin/", admin.site.urls))
+
+handler404 = custom_404_handler
+handler500 = custom_500_handler
