@@ -1,23 +1,21 @@
-# apps/shared/views.py
-from rest_framework import status
-from rest_framework.response import Response
+from django.http import JsonResponse
 
 def custom_404_handler(request, exception=None):
-    return Response(
+    return JsonResponse(
         {
             "detail": "La ruta solicitada no fue encontrada.",
             "code": "not_found",
             "status": 404
         },
-        status=status.HTTP_404_NOT_FOUND
+        status=404
     )
 
 def custom_500_handler(request):
-    return Response(
+    return JsonResponse(
         {
             "detail": "Error interno del servidor.",
             "code": "server_error",
             "status": 500
         },
-        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        status=500
     )
