@@ -168,4 +168,10 @@ REST_FRAMEWORK = {
         "auth_strict": "5/minute", 
         "transactions": "10/minute",
     },
+     "DEFAULT_RENDERER_CLASSES": (
+        "rest_framework.renderers.JSONRenderer",
+    ) if not DEBUG else (
+        "rest_framework.renderers.BrowsableAPIRenderer",
+        "rest_framework.renderers.JSONRenderer",
+    ),
 }
