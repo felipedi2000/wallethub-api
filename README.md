@@ -1,4 +1,4 @@
-# 💳 WalletHub API — FinTech Backend Core
+# WalletHub API — FinTech Backend Core
 
 **Entorno de Producción / Swagger UI:** [https://wallethub-api.onrender.com/api/docs/] o [https://wallethub-api.onrender.com/api/redoc/]
 
@@ -6,7 +6,7 @@ API RESTful de grado empresarial para la gestión de billeteras digitales, proce
 
 ---
 
-## 🛠️ Stack Tecnológico & Arquitectura
+## Stack Tecnológico & Arquitectura
 
 * **Framework:** Python / Django REST Framework
 * **Documentación & OpenAPI:** `drf-spectacular` (Swagger UI / ReDoc)
@@ -16,7 +16,7 @@ API RESTful de grado empresarial para la gestión de billeteras digitales, proce
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```text
 wallethub_api/
