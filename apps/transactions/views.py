@@ -6,11 +6,11 @@ from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from drf_spectacular.utils import extend_schema,extend_schema_view, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from apps.authentication.models import Device
 from apps.transactions.paginations import StandardResultsSetPagination
 from apps.shared.throttles import TransactionThrottle, CustomUserRateThrottle
-
 from .decorators import idempotency_key_required
 from .models import Transaction
 from .serializers import (
@@ -22,10 +22,19 @@ from .serializers import (
 )
 from .services import TransactionService
 
-
+@extend_schema_view(
+    list=extend_schema(
+        summary="Listar transacciones activas",
+        description="Obtiene un listado de todas las transacciones asociadas a la billetera del usuario autenticado."
+    ),
+    retrieve=extend_schema(
+        summary="Obtener detalle de transacción",
+        description="Devuelve el detalle completo de una transacción específica por su ID."
+    ),
+)
+@extend_schema(tags=["Transactions"])
 class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [IsAuthenticated]
-
+    """Gestionar transacciones y transferencias"""
     def get_throttles(self):
         action_name = getattr(self, "action", None)
         if action_name in ["transfer", "deposit"]:
@@ -54,6 +63,7 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
         return TransactionDetailSerializer
 
     def _get_request_context(self):
+        """Extrae contexto de seguridad de la petición HTTP."""
         device_id = self.request.headers.get("X-Device-ID") or self.request.data.get("device_id")
         device = Device.objects.filter(id=device_id).first() if device_id else None
 
@@ -69,6 +79,27 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
             "user_agent": user_agent,
         }
 
+    @extend_schema(
+        tags=["Transactions"],
+        summary="Transferir dinero entre billeteras",
+        description=(
+            "Ejecuta una transferencia de fondos atómica entre la billetera del usuario autenticado y un destinatario.\n\n"
+            "### Garantías de Arquitectura:\n"
+            "* **Transaccionalidad Atómica (`atomic`):** Garantiza que el débito y el crédito se completen en su totalidad o se reviertan totalmente (Rollback) ante cualquier fallo.\n"
+            "* **Control de Concurrencia (`select_for_update`):** Bloquea los registros de las billeteras involucradas en un orden estricto para evitar condiciones de carrera (*Race Conditions*) y prevenimos *Deadlocks*.\n"
+            "* **Idempotencia (`X-Idempotency-Key`):** Encabezado obligatorio (UUIDv4). Peticiones duplicadas con la misma clave devolverán la respuesta en caché sin procesar un doble débito."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="X-Idempotency-Key",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.HEADER,
+                required=True,
+                description="Clave única (UUIDv4) para asegurar la idempotencia de la transferencia.",
+            ),
+        ],
+
+    )
     @action(detail=False, methods=["post"], url_path="transfer")
     @idempotency_key_required
     def transfer(self, request):
@@ -91,6 +122,25 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
         response_serializer = TransactionDetailSerializer(transaction_obj)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(
+        tags=["Transactions"],
+        summary="Depositar dinero a la billetera",
+        description=(
+            "Acredita un monto de dinero a la billetera del usuario autenticado de forma atómica.\n\n"
+            "### Garantías Técnicas:\n"
+            "* **Consistencia de Datos:** Incrementa el saldo dentro de una transacción acotada para reflejar el estado en tiempo real sin inconsistencias.\n"
+            "* **Garantía de Idempotencia:** Requiere el encabezado `X-Idempotency-Key` (UUIDv4) para asegurar que fallos de conexión no generen recargas dobles."
+        ),
+        parameters=[
+            OpenApiParameter(
+                name="X-Idempotency-Key",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.HEADER,
+                required=True,
+                description="Clave única (UUIDv4) para asegurar la idempotencia del depósito.",
+            ),
+        ],
+    )
     @action(detail=False, methods=["post"], url_path="deposit")
     @idempotency_key_required
     def deposit(self, request):
@@ -112,7 +162,11 @@ class TransactionViewSet(viewsets.ReadOnlyModelViewSet):
         response_serializer = TransactionDetailSerializer(transaction_obj)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
-
+@extend_schema(
+    tags=["Transactions"],
+    summary="Consultar límites de transacción",
+    description="Devuelve los límites diarios y mensuales asignados al usuario autenticado, junto con sus montos acumulados y disponibles.",
+)
 class UserLimitsMeAPIView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [CustomUserRateThrottle]
@@ -137,13 +191,24 @@ class UserLimitsMeAPIView(APIView):
         serializer = UserTransactionLimitSerializer(limits)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Transactions"],
+        summary="Consultar historial paginado de transacciones",
+        description="Obtiene una lista cronológica paginada de todas las transferencias e ingresos vinculados al usuario autenticado."
+    ),
+    retrieve=extend_schema(
+        tags=["Transactions"],
+        summary="Obtener detalle histórico de una transacción",
+        description="Muestra los datos detallados de un registro histórico en particular mediante su ID."
+    ),
+)
 class TransactionHistoryView(viewsets.ReadOnlyModelViewSet):
+    """Historial de transacciones del usuario"""
     serializer_class = TransactionListSerializer
     permission_classes = [IsAuthenticated]
     throttle_classes = [CustomUserRateThrottle]
     pagination_class = StandardResultsSetPagination
-
 
     def get_queryset(self):
         user = self.request.user

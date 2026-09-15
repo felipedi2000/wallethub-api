@@ -176,3 +176,49 @@ REST_FRAMEWORK = {
 
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
+
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Wallet Hub API",
+    "DESCRIPTION": "API para gestionar billeteras y transacciones digitales",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "CONTACT": {
+        "name": "Soporte Wallet Hub",
+        "email": "felipe.edi2000@gmail.com",
+        "url": "https://github.com/felipedi2000/wallethub-api/"
+    },
+    "LICENSE": {
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT"
+    },
+    "TAGS": [
+        {
+            "name": "Authentication",
+            "description": (
+                "Autenticación, registro y gestión de usuarios.\n\n"
+                "* **Control de Tráfico (Rate Limiting):** Protección estricta contra ataques de fuerza bruta en inicio/cierre de sesión y registro.\n"
+                "* **Prevención de Enumeración:** Límite de tasa especializado en la búsqueda de correos para evitar el raspado (*scraping*) de usuarios.\n"
+                "* **Inicialización Automática:** La creación de una cuenta desencadena la instanciación automática de su billetera y sus límites transaccionales."
+            ),
+        },
+        {
+            "name": "Wallet",
+            "description": "Gestión de billeteras y saldos con límite general de tasa de peticiones por usuario.",
+        },
+        {
+            "name": "Transactions",
+            "description": (
+                "Gestión de transacciones, transferencias atómicas y depósitos.\n\n"
+                "* **Rate Limiting:** Operaciones críticas restringidas mediante `TransactionThrottle` "
+                "para mitigar ráfagas no autorizadas y prevenir saturación en la base de datos.\n"
+                "* **Idempotencia:** Endpoints de escritura exigen `X-Idempotency-Key` para prevenir peticiones duplicadas.\n"
+                "* **Concurrencia:** Bloqueos pesimistas (`select_for_update`) a nivel de base de datos para garantizar consistencia del saldo."
+            ),
+        },
+    ],
+    "SORT_OPERATIONS_BY_METHODS": False,
+    "ENABLE_DJANGO_DECORATORS": True,
+    "SORT_OPERATIONS": False,
+    "SORT_OPERATION_PARAMETERS": False,
+}

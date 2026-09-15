@@ -1,0 +1,998 @@
+openapi: 3.0.3
+info:
+  title: Wallet Hub API
+  version: 1.0.0
+  description: API para gestionar billeteras y transacciones digitales
+  contact:
+    name: Soporte Wallet Hub
+    email: soporte@wallethub.com
+    url: https://wallethub.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+paths:
+  /api/v1/auth/change-password/:
+    post:
+      operationId: v1_auth_change_password_create
+      description: Cambiar contraseña del usuario
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangePassword'
+          description: ''
+  /api/v1/auth/devices/:
+    get:
+      operationId: v1_auth_devices_list
+      description: Listar y crear dispositivos del usuario
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Device'
+          description: ''
+    post:
+      operationId: v1_auth_devices_create
+      description: Listar y crear dispositivos del usuario
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Device'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Device'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Device'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+          description: ''
+  /api/v1/auth/devices/{id}/:
+    get:
+      operationId: v1_auth_devices_retrieve
+      description: Obtener, actualizar y eliminar dispositivo
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+          description: ''
+    put:
+      operationId: v1_auth_devices_update
+      description: Obtener, actualizar y eliminar dispositivo
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Device'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Device'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Device'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+          description: ''
+    patch:
+      operationId: v1_auth_devices_partial_update
+      description: Obtener, actualizar y eliminar dispositivo
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDevice'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDevice'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDevice'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+          description: ''
+    delete:
+      operationId: v1_auth_devices_destroy
+      description: Obtener, actualizar y eliminar dispositivo
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      description: Login con email y contraseña. Retorna access y refresh tokens
+      summary: Obtener tokens JWT
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      description: Cerrar sesión del usuario
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Logout'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Logout'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Logout'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Logout'
+          description: ''
+  /api/v1/auth/me/:
+    get:
+      operationId: v1_auth_me_retrieve
+      description: Obtener y actualizar perfil del usuario autenticado
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    put:
+      operationId: v1_auth_me_update
+      description: Obtener y actualizar perfil del usuario autenticado
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserProfile'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+    patch:
+      operationId: v1_auth_me_partial_update
+      description: Obtener y actualizar perfil del usuario autenticado
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserProfile'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+          description: ''
+  /api/v1/auth/refresh/:
+    post:
+      operationId: v1_auth_refresh_create
+      description: Obtiene un nuevo access token usando el refresh token
+      summary: Refrescar token de acceso
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: v1_auth_register_create
+      description: Registrar nuevo usuario en la plataforma
+      tags:
+      - Authentication
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRegister'
+          description: ''
+  /api/v1/auth/search/:
+    get:
+      operationId: v1_auth_search_retrieve
+      description: Buscar usuario por email para transferencias
+      tags:
+      - Authentication
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserWalletId'
+          description: ''
+  /api/v1/transactions/:
+    get:
+      operationId: v1_transactions_list
+      description: Gestionar transacciones y transferencias
+      tags:
+      - Transactions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionDetail'
+          description: ''
+  /api/v1/transactions/{id}/:
+    get:
+      operationId: v1_transactions_retrieve
+      description: Gestionar transacciones y transferencias
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - Transactions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDetail'
+          description: ''
+  /api/v1/transactions/deposit/:
+    post:
+      operationId: v1_transactions_deposit_create
+      description: Deposita dinero en tu billetera
+      summary: Depositar dinero a la billetera
+      tags:
+      - Transactions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DepositCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DepositCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositCreate'
+          description: ''
+  /api/v1/transactions/limits/me/:
+    get:
+      operationId: v1_transactions_limits_me_retrieve
+      tags:
+      - Transactions
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserTransactionLimit'
+          description: ''
+  /api/v1/transactions/transfer/:
+    post:
+      operationId: v1_transactions_transfer_create
+      description: Realiza una transferencia de dinero de tu billetera a otra
+      summary: Transferir dinero entre billeteras
+      tags:
+      - Transactions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferCreate'
+          description: ''
+  /api/v1/wallet/me/:
+    get:
+      operationId: v1_wallet_me_retrieve
+      description: Obtener billetera del usuario autenticado
+      tags:
+      - Wallet
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+          description: ''
+components:
+  schemas:
+    ChangePassword:
+      type: object
+      properties:
+        old_password:
+          type: string
+          writeOnly: true
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 8
+        confirm_new_password:
+          type: string
+          writeOnly: true
+      required:
+      - confirm_new_password
+      - new_password
+      - old_password
+    CurrencyEnum:
+      enum:
+      - COP
+      - USD
+      type: string
+      description: |-
+        * `COP` - Peso Colombiano
+        * `USD` - Dólar Estadounidense
+    DepositCreate:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          description: Monto a recargar (debe ser mayor a 0)
+        description:
+          type: string
+          default: Depósito de fondos
+          maxLength: 255
+      required:
+      - amount
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_name:
+          type: string
+          maxLength: 255
+        ip_address:
+          type: string
+          readOnly: true
+        user_agent:
+          type: string
+          readOnly: true
+        last_login_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - device_name
+      - id
+      - ip_address
+      - last_login_at
+      - user_agent
+    GetUserWalletId:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 20
+        last_name:
+          type: string
+          maxLength: 20
+        wallet_id:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
+      - email
+      - id
+      - wallet_id
+    Logout:
+      type: object
+      properties:
+        refresh:
+          type: string
+      required:
+      - refresh
+    MovementTypeEnum:
+      enum:
+      - CREDIT
+      - DEBIT
+      type: string
+      description: |-
+        * `CREDIT` - Crédito (Entrada +)
+        * `DEBIT` - Débito (Salida -)
+    Movements:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        movement_type:
+          allOf:
+          - $ref: '#/components/schemas/MovementTypeEnum'
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        balance_before:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        balance_after:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - balance_after
+      - balance_before
+      - created_at
+      - id
+      - movement_type
+    PatchedDevice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_name:
+          type: string
+          maxLength: 255
+        ip_address:
+          type: string
+          readOnly: true
+        user_agent:
+          type: string
+          readOnly: true
+        last_login_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedUserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 20
+        first_name:
+          type: string
+          maxLength: 20
+        last_name:
+          type: string
+          maxLength: 20
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    StatusEnum:
+      enum:
+      - PENDING
+      - COMPLETE
+      - FAILED
+      type: string
+      description: |-
+        * `PENDING` - Pendiente
+        * `COMPLETE` - Completada
+        * `FAILED` - Fallida
+    TokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - email
+      - password
+      - refresh
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TransactionDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        transaction_type:
+          allOf:
+          - $ref: '#/components/schemas/TransactionTypeEnum'
+          readOnly: true
+        wallet_from:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        wallet_to:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        sender_email:
+          type: string
+          format: email
+          readOnly: true
+        receiver_email:
+          type: string
+          format: email
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        ref_code:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        movements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Movements'
+          readOnly: true
+      required:
+      - amount
+      - created_at
+      - description
+      - id
+      - movements
+      - receiver_email
+      - ref_code
+      - sender_email
+      - status
+      - transaction_type
+      - wallet_from
+      - wallet_to
+    TransactionTypeEnum:
+      enum:
+      - DEPOSIT
+      - WITHDRAWAL
+      - TRANSFER
+      type: string
+      description: |-
+        * `DEPOSIT` - Depósito
+        * `WITHDRAWAL` - Retiro
+        * `TRANSFER` - Transferencia
+    TransferCreate:
+      type: object
+      properties:
+        receiver_wallet_id:
+          type: string
+          format: uuid
+          description: UUID de la billetera de destino
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          description: Monto a transferir (debe ser mayor a 0)
+        description:
+          type: string
+          default: ''
+          maxLength: 255
+        is_pre_blocked:
+          type: boolean
+          default: false
+      required:
+      - amount
+      - receiver_wallet_id
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 20
+        first_name:
+          type: string
+          maxLength: 20
+        last_name:
+          type: string
+          maxLength: 20
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - id
+      - updated_at
+    UserRegister:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        phone_number:
+          type: string
+          nullable: true
+          maxLength: 20
+        first_name:
+          type: string
+          maxLength: 20
+        last_name:
+          type: string
+          maxLength: 20
+        password:
+          type: string
+          writeOnly: true
+          minLength: 5
+        password_confirm:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - id
+      - password
+      - password_confirm
+    UserTransactionLimit:
+      type: object
+      properties:
+        daily_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        daily_spent:
+          type: number
+          format: double
+          readOnly: true
+        daily_available:
+          type: number
+          format: double
+          readOnly: true
+        monthly_limit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+        monthly_spent:
+          type: number
+          format: double
+          readOnly: true
+        monthly_available:
+          type: number
+          format: double
+          readOnly: true
+      required:
+      - daily_available
+      - daily_spent
+      - monthly_available
+      - monthly_spent
+    Wallet:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        blocked_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        available_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,13}(?:\.\d{0,2})?$
+          readOnly: true
+        currency:
+          allOf:
+          - $ref: '#/components/schemas/CurrencyEnum'
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - available_balance
+      - balance
+      - blocked_balance
+      - created_at
+      - currency
+      - id
+      - is_active
+      - updated_at
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: Authentication
+  description: Autenticación, registro y gestión de usuarios
+- name: Wallet
+  description: Gestión de billeteras y saldos
+- name: Transactions
+  description: Transacciones, transferencias y depósitos
