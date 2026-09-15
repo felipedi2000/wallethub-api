@@ -1,5 +1,7 @@
 # 💳 WalletHub API — FinTech Backend Core
 
+**Entorno de Producción / Swagger UI:** [https://wallethub-api.onrender.com/api/docs/](https://wallethub-api.onrender.com/api/redoc/)
+
 API RESTful de grado empresarial para la gestión de billeteras digitales, procesamiento de transferencias atómicas, depósitos y auditoría de seguridad. Construida sobre Django REST Framework con garantías de consistencia contable, idempotencia y control de concurrencia.
 
 ---
